@@ -56,7 +56,7 @@ class BlockCacheManager:
 
     def cache_base_key(self,group,objects):
         """Генерация основного ключа"""
-        return self.prepare_key(group,u'__'.join([u'anonymous' if isinstance(o,AnonymousUser) else unicode(o.pk) for o in objects]))
+        return self.prepare_key(group,u'__'.join([u'anonymous' if isinstance(o,AnonymousUser) else unicode(o.__class__.__name__)+u':'+unicode(o.pk) for o in objects]))
 
     def get_cache_as_array(self,key,cache):
         # Get current value

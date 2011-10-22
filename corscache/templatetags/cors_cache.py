@@ -3,7 +3,7 @@
 __author__ = 'Ponomarev Dmitry <demdxx@gmail.com>'
 __lincese__ = 'MIT'
 
-from django.template import Library, Node, TemplateSyntaxError
+from django.template import Library, Node, TemplateSyntaxError, VariableDoesNotExist
 from django.template import resolve_variable
 from django.utils.encoding import force_unicode
 from django.core.cache import get_cache
@@ -29,8 +29,14 @@ class CacheNode(Node):
 
     def render(self, context):
         # Build a unicode key for this fragment and all vary-on's.
-        cache_key = u':'.join([self.fragment_name] + \
-            [force_unicode(resolve_variable(var, context)) for var in self.vary_on])
+        values = []
+        for var in self.vary_on:
+            #try:
+            values.append(resolve_variable(var, context))
+            #except VariableDoesNotExist:
+            #    raise TemplateSyntaxError("No such variable: %s", var)
+
+        cache_key = u':'.join([self.fragment_name] + [force_unicode(var) for var in values])
         cache_key_stale = cache_key + '.stale'
 
         if self.links:
@@ -122,7 +128,13 @@ class SmartCacheNode(Node):
 
     def render(self, context):
         # Build a unicode key for this fragment and all vary-on's.
-        values = [resolve_variable(var, context) for var in self.vary_on]
+        values = []
+        for var in self.vary_on:
+            try:
+                values.append(resolve_variable(var, context))
+            except VariableDoesNotExist:
+                raise TemplateSyntaxError("No such variable: %s", var)
+
         objects = [o for o in values if isinstance(o,(Model,AnonymousUser)) ]
         values = [v for v in values if not isinstance(v,(Model,AnonymousUser))]
 
@@ -136,8 +148,7 @@ class SmartCacheNode(Node):
             self.links = None
         
         # Получить текущий кэшь
-        value = base_cache_manager.get_register(group=group, \
-                        objects=objects,cache=self.cache)
+        value = base_cache_manager.get_register(group=group, objects=objects,cache=self.cache)
         
         if value is None:
             # Обновим кэшь

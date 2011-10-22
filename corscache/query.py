@@ -15,6 +15,9 @@ class QuerySetMixin(object):
                 self._cacheops = None
                 self._cachetimeout = None
 
+    def get_cache_key(self,extra=''):
+        return u''
+
     #
     # Массовые действия
     #

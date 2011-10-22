@@ -53,7 +53,7 @@ class GroupKeyStore(object):
         self._keys = {}
         if self._realstore:
             try:
-                self._keys = self._realstore.get('storage_GroupKeyStore') or {}
+                self._keys = pickle.loads(self._realstore.get('storage_GroupKeyStore')) or {}
             except:
                 self._keys = {}
 
@@ -67,7 +67,7 @@ class GroupKeyStore(object):
         if not self._keys.has_key(group):
             self.set_key(group,self._keygen.gen_key(group))
 
-        return '%s__%s' % (self._keys.get(group), postfix)
+        return '%s__%s' % (self._keys[group], postfix)
 
     def reset_key(self, group):
         if not self._keys.has_key(group):

@@ -10,6 +10,7 @@ from django.conf import settings
 #
 CORSCACHE_DEFAULT_TIME = getattr(settings,'CORSCACHE_DEFAULT_TIME',3600)
 CORSCACHE_DEFAULT_CACHE = getattr(settings,'CORSCACHE_DEFAULT_CACHE','default')
+CORSCACHE_KEYSTORE_CACHE = getattr(settings,'CORSCACHE_KEYSTORE_CACHE','default')
 
 # Префиксы к именам кэша
 CORSCACHE_BLOCKS_PREFIX = getattr(settings,'CORSCACHE_BLOCKS_PREFIX','blocks')
@@ -84,6 +85,4 @@ def add_to_link_rules(name,links,cache):
             if not CORSCACHE_EXTENDET_LINKS.has_key(modname):
                 CORSCACHE_EXTENDET_LINKS[modname] = {}
             CORSCACHE_EXTENDET_LINKS[modname][name] = {'cache':cache}
-
-    print CORSCACHE_EXTENDET_LINKS
 
