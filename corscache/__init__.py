@@ -1,42 +1,35 @@
 # -*- coding: utf-8 -*-
 
-#
-# TODO: Необходимо реализовать кэш запросов
-#
-
 VERSION = ('0', '0', '0')
 
 __version__ = '.'.join(VERSION)
 __author__ = 'demdxx@gmail.com'
 __lincese__ = 'MIT'
 
-from django.db.models import Manager, Model
-from django.db.models.query import QuerySet, ValuesQuerySet, ValuesListQuerySet, DateQuerySet
+from django.db.models import Model
+from django.db.models.query import QuerySet
 
-from .query import *
-from .model import *
+from .db import *
 from .utils import *
+from .conf import CORSCACHE_QUERYCACHE_ACTIVE, CORSCACHE_ACTIVE
 
 def install_corscache():
     """Install Cors Cache"""
-
     monkey_mix(Model, ModelMixin)
-    #monkey_mix(Manager, ManagerMixin)
-    monkey_mix(QuerySet, QuerySetMixin)
-    #monkey_mix(ValuesQuerySet, QuerySetMixin, ['iterator'])
-    #monkey_mix(ValuesListQuerySet, QuerySetMixin, ['iterator'])
-    #monkey_mix(DateQuerySet, QuerySetMixin, ['iterator'])
-    #monkey_mix(DateQuerySet, QuerySetMixin, ['iterator'])
+    if CORSCACHE_QUERYCACHE_ACTIVE:
+        monkey_mix(QuerySet, QuerySetMixin)
 
-    # Turn off caching in admin
-    from django.contrib.admin.options import ModelAdmin
-    def ModelAdmin_queryset(self, request):
-        queryset = o_ModelAdmin_queryset(self, request)
-        if queryset._cacheprofile is None:
-            return queryset
-        else:
-            return queryset.nocache()
-    o_ModelAdmin_queryset = ModelAdmin.queryset
-    ModelAdmin.queryset = ModelAdmin_queryset
+        # Turn off caching in admin
+        from django.contrib.admin.options import ModelAdmin
 
-install_corscache()
+        def ModelAdmin_queryset(self, request):
+            queryset = o_ModelAdmin_queryset(self, request)
+            if queryset._cacheprofile is None:
+                return queryset
+            else:
+                return queryset.nocache()
+        o_ModelAdmin_queryset = ModelAdmin.queryset
+        ModelAdmin.queryset = ModelAdmin_queryset
+
+if CORSCACHE_QUERYCACHE_ACTIVE or CORSCACHE_ACTIVE:
+    install_corscache()

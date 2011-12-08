@@ -11,7 +11,7 @@ from django.contrib.auth.models import AnonymousUser
 from django.db.models import Model
 
 from ..blockmanager import base_cache_manager
-from ..conf import add_to_link_rules
+from ..conf import add_to_link_rules, CORSCACHE_ACTIVE
 
 register = Library()
 
@@ -29,6 +29,10 @@ class CacheNode(Node):
 
     def render(self, context):
         # Build a unicode key for this fragment and all vary-on's.
+        
+        if not CORSCACHE_ACTIVE:
+            return self.nodelist.render(context)
+        
         values = []
         for var in self.vary_on:
             #try:
@@ -36,7 +40,7 @@ class CacheNode(Node):
             #except VariableDoesNotExist:
             #    raise TemplateSyntaxError("No such variable: %s", var)
 
-        cache_key = u':'.join([self.fragment_name] + [force_unicode(var) for var in values])
+        cache_key = u'__'.join([self.fragment_name] + [force_unicode(getattr(var,'pk',var))+u':'+var.__class__.__name__ for var in values])
         cache_key_stale = cache_key + '.stale'
 
         if self.links:
@@ -107,7 +111,7 @@ def do_cache(parser, token, endparse='endcache', noda=CacheNode):
 
         tokens = ntokens
 
-    return noda(nodelist, expire_time, tokens[2], tokens[3:], cache=cache, links=links)
+    return noda(nodelist, expire_time, tokens[2].strip('"'), tokens[3:], cache=cache, links=links)
 
 
 class SmartCacheNode(Node):
@@ -128,6 +132,10 @@ class SmartCacheNode(Node):
 
     def render(self, context):
         # Build a unicode key for this fragment and all vary-on's.
+        
+        if not CORSCACHE_ACTIVE:
+            return self.nodelist.render(context)
+
         values = []
         for var in self.vary_on:
             try:

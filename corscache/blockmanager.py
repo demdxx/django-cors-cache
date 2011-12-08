@@ -41,10 +41,10 @@ from .keystore import GroupKeyStore
 from .conf import *
 
 class BlockCacheManager:
-    def __init__(self,prefix='block',cachetime=None,defaultcache=None,keystore=GroupKeyStore):
+    def __init__(self,prefix=CORSCACHE_BLOCKS_PREFIX,cachetime=None,defaultcache=None,keystore=GroupKeyStore):
         self._cachetime = cachetime if cachetime else CORSCACHE_DEFAULT_TIME
         self._defaultcache = defaultcache if defaultcache else CORSCACHE_DEFAULT_CACHE
-        self._keystore = keystore(prefix=prefix,realstore=get_cache('default'))
+        self._keystore = keystore(prefix=prefix,realstore=get_cache(CORSCACHE_KEYSTORE_CACHE))
 
     def get_cache_object(self,cache):
         if isinstance(cache,basestring):
@@ -56,7 +56,16 @@ class BlockCacheManager:
 
     def cache_base_key(self,group,objects):
         """Генерация основного ключа"""
-        return self.prepare_key(group,u'__'.join([u'anonymous' if isinstance(o,AnonymousUser) else unicode(o.__class__.__name__)+u':'+unicode(o.pk) for o in objects]))
+        values = []
+        for o in objects:
+            if isinstance(o,AnonymousUser):
+                values.append('anonymous')
+            elif not o:
+                values.append('none')
+            else:
+                values.append(unicode(o.__class__.__name__)+u':'+unicode(o.pk))
+
+        return self.prepare_key(group,u'__'.join(values))
 
     def get_cache_as_array(self,key,cache):
         # Get current value
@@ -145,14 +154,14 @@ class BlockCacheManager:
         
         # Generate link key
         pk = u'anonymous' if isinstance(obj,AnonymousUser) else unicode(obj.pk)
-        lkey = self.prepare_key(group,u'%s:%s__%s__link' % (obj.__class__.__module__,obj.__class__.__name__, pk))
+        key = self.prepare_key(group,u'%s:%s__%s__link' % (obj.__class__.__module__,obj.__class__.__name__, pk))
         
         # Get invalidate keys
-        keys = self.get_cache_as_array(lkey,cache)
+        keys = self.get_cache_as_array(key,cache)
         
         # Invalidate keys
         if keys and len(keys)>0:
-            cache.delete_many(keys+[lkey])
+            cache.delete_many(keys+[key])
 
     def invalidate(self,obj,cache=None):
         """
@@ -174,14 +183,31 @@ class BlockCacheManager:
         for g in groups:
             self.invalidate_group_by_object(g,obj,cache)
 
-        self.invalidate_by_extend_link_rules(obj,cache)
+    def __invalidate_simple_rule(self,group,obj,link,cache):
+        if link.has_key('name_fields'):
+            # Модифицируем имя используя параметры в модели
+            names = []
+            for n in link.get('name_fields'):
+                val = None
+                for k in n.split('__'):
+                    val = getattr(val if val else obj,k,None)
+                names.append( unicode(val) )
+            group = '__'.join([group]+names)
+
+        if not link.get('links',False):
+            # Если это тупой кэшь
+            cache.delete(group)
+        else:
+            # Удаляем линки
+            for l in link['links']:
+                self.invalidate_group_by_object(group,getattr(obj,l,None),link.get('cache',cache))
 
     def invalidate_by_extend_link_rules(self,obj,cache=None):
         """
         Инвалидация объекта по правилам расширенных ( сторонних ) связей.
             Если этот объект изменён => следовательно связанные объекты изменены.
         """
-        
+
         # Проверим сторонние линки
         rules = get_block_link_rules_by_object(obj)
         if rules:
@@ -192,15 +218,16 @@ class BlockCacheManager:
             for group, links in rules.iteritems():
                 # Обходим связи инвалидации
                 if isinstance(links,dict):
-                    if not links.get('links',False):
-                        # Если это тупой кэшь
-                        cache.delete(group)
-                    else:
-                        for l in links['links']:
-                            self.invalidate_group_by_object(group,getattr(obj,l,None),links.get('cache',cache))
+                    self.__invalidate_simple_rule(group,obj,links,cache)
                 else:
                     for l in links:
-                        self.invalidate_group_by_object(group,getattr(obj,l,None),cache)
+                        if isinstance(l,dict):
+                            self.__invalidate_simple_rule(group,obj,l,cache)
+                        elif isinstance(l,(list,tuple)):
+                            for l2 in l:
+                                self.invalidate_group_by_object(group,getattr(obj,l2,None),cache)
+                        else:
+                            self.invalidate_group_by_object(group,getattr(obj,l,None),cache)
 
 
 base_cache_manager = BlockCacheManager(CORSCACHE_BLOCKS_PREFIX)

@@ -10,6 +10,7 @@ from django.conf import settings
 #
 CORSCACHE_DEFAULT_TIME = getattr(settings,'CORSCACHE_DEFAULT_TIME',3600)
 CORSCACHE_DEFAULT_CACHE = getattr(settings,'CORSCACHE_DEFAULT_CACHE','default')
+CORSCACHE_DEFAULT_QUERY_CACHE = getattr(settings,'CORSCACHE_DEFAULT_CACHE',CORSCACHE_DEFAULT_CACHE)
 CORSCACHE_KEYSTORE_CACHE = getattr(settings,'CORSCACHE_KEYSTORE_CACHE','default')
 
 # Префиксы к именам кэша
@@ -21,6 +22,24 @@ CORSCACHE_QUERYS_PREFIX = getattr(settings,'CORSCACHE_QUERYS_PREFIX','querys')
 # Если отчистка построена только на правилах то лучше выключить.
 #
 CORSCACHE_INTELLIGENCE = getattr(settings,'CORSCACHE_INTELLIGENCE',True)
+
+CORSCACHE_ACTIVE = getattr(settings,'CORSCACHE_ACTIVE',True)
+CORSCACHE_QUERYCACHE_ACTIVE = getattr(settings,'CORSCACHE_QUERYCACHE_ACTIVE',CORSCACHE_ACTIVE)
+
+#
+# Правила кэширования запросов
+#
+# EXAMPLE:
+#
+#   CORSCACHE_QUERY_CACHE = {
+#       'auth.user':{'get':3600},
+#       'profile.profile':{'get':3600},
+#       '*.*': {'count':3600,'cache':'level1'},
+#   }
+#
+CORSCACHE_QUERY_CACHE = getattr(settings,'CORSCACHE_QUERY_CACHE',None)
+if not CORSCACHE_QUERY_CACHE:
+    CORSCACHE_QUERYCACHE_ACTIVE = False
 
 #
 # Сторонние связки. [ Карта инвалидации ]
@@ -39,8 +58,6 @@ CORSCACHE_INTELLIGENCE = getattr(settings,'CORSCACHE_INTELLIGENCE',True)
 # {% smart_cache "news" autor cache=cacheName %} ... {% end_smart_cache %}
 #
 # При изменении или создании новости сбрасывается кэш этой группу связанный с пользователем
-#
-# TODO: Необходимо встроить средство быстрой проверки и добавить список для формирования имени.
 #
 
 CORSCACHE_EXTENDET_LINKS = getattr(settings,'CORSCACHE_EXTENDET_LINKS',{}) or {}

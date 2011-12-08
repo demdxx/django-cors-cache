@@ -11,17 +11,6 @@ class MonkeyProxy(object):
 
 
 def monkey_mix(cls, mixin, methods=None):
-    """
-    Mixes a mixin into existing class.
-    Does not use actual multi-inheritance mixins, just monkey patches methods.
-    Mixin methods can call copies of original ones stored in `_no_monkey` proxy:
-
-    class SomeMixin(object):
-        def do_smth(self, arg):
-            ... do smth else before
-            self._no_monkey.do_smth(self, arg)
-            ... do smth else after
-    """
     assert '_no_monkey' not in cls.__dict__, 'Multiple monkey mix not supported'
     cls._no_monkey = MonkeyProxy(cls)
 

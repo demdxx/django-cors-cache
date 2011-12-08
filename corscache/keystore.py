@@ -64,7 +64,7 @@ class GroupKeyStore(object):
             self._realstore.set('storage_GroupKeyStore',pickle.dumps(self._keys),0)
 
     def get_key(self, group, postfix=''):
-        if not self._keys.has_key(group):
+        if not self._keys.get(group,None):
             self.set_key(group,self._keygen.gen_key(group))
 
         return '%s__%s' % (self._keys[group], postfix)

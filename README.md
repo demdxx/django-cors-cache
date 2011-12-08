@@ -6,6 +6,10 @@ Django cors cache modeule
 Кэширование в шаблонах
 ----------------------
 
+===Query cache===
+
+Кэширование доступно только для get/count запросов, остальные не являются эффективными.
+
 ===Обычный кэш===
 
 Полностью копирует аналогичный тег в Django.
@@ -60,6 +64,9 @@ Example settings
 	# Префиксы к именам кэша
 	CORSCACHE_BLOCKS_PREFIX = 'blocks'
 	CORSCACHE_QUERYS_PREFIX = 'queryes'
+
+    CORSCACHE_ACTIVE = True
+    CORSCACHE_QUERYCACHE_ACTIVE = True
 	
 	#
 	# Интелект - автоматическая отчистка связанных блоков.
@@ -84,8 +91,6 @@ Example settings
 	# {% smart_cache "news" autor cache=cacheName %} ... {% end_smart_cache %}
 	#
 	# При изменении или создании новости сбрасывается кэш этой группу связанный с пользователем
-	#
-	# TODO: Необходимо встроить средство быстрой проверки и добавить список для формирования имени.
 	#
 	
 	# Карта инвалидации
@@ -114,13 +119,11 @@ Example settings
 		},
 	}
 	
-	# INFO: Ещё не реалтзованно
-	
 	# Кэширование запросов
 	CORSCACHE_QUERY_CACHE = {
 		'auth.user':{'get':3600}, # Получить Пользователя на час
 		'profile.profile':{'get':3600}, # Получить профиль на час
-		'*.*': {'count':3600}, # Кэшируем все count запросы на час
+		'*.*': {'count':3600,'cache':'level2'}, # Кэшируем все count запросы на час
 	}
 
 
