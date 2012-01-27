@@ -29,6 +29,8 @@ __lincese__ = 'MIT'
 # В кэше подобной структуры можно выставлять на длительный или безлимитный срок хранения.
 #
 
+#import logging
+
 try:
     import cPickle as pickle
 except:
@@ -39,6 +41,8 @@ from django.contrib.auth.models import AnonymousUser
 
 from .keystore import GroupKeyStore
 from .conf import *
+
+#logger = logging.getLogger(__name__)
 
 class BlockCacheManager:
     def __init__(self,prefix=CORSCACHE_BLOCKS_PREFIX,cachetime=None,defaultcache=None,keystore=GroupKeyStore):
@@ -158,6 +162,9 @@ class BlockCacheManager:
         
         # Get invalidate keys
         keys = self.get_cache_as_array(key,cache)
+
+        #logger.debug('[CORSCACHE] Invalidate group: %s', group)
+        #logger.debug('[CORSCACHE] Link key: %s [%s]', key, keys)
         
         # Invalidate keys
         if keys and len(keys)>0:
